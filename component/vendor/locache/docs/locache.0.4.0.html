@@ -1,0 +1,1731 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+  <title>locache.0.4.0.js</title>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <meta name="viewport" content="width=device-width, target-densitydpi=160dpi, initial-scale=1.0; maximum-scale=1.0; user-scalable=0;">
+  <link rel="stylesheet" media="all" href="docco.css" />
+</head>
+<body>
+  <div id="container">
+    <div id="background"></div>
+    
+    <ul class="sections">
+        
+          <li id="title">
+              <div class="annotation">
+                  <h1>locache.0.4.0.js</h1>
+              </div>
+          </li>
+        
+        
+        
+        <li id="section-1">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-1">&#182;</a>
+              </div>
+              
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="comment">/*jshint forin:true, noarg:true, noempty:true, eqeqeq:true, bitwise:true, strict:true, undef:true, unused:true, curly:true, browser:true, jquery:true, indent:4, maxerr:200 */</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-2">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-2">&#182;</a>
+              </div>
+              <pre><code> locache 0.4.0
+
+ (c) 2012 Dougal Matthews
+ locache may be freely distributed under the MIT licence.
+
+ locache is a client side caching framework that stores data
+ with DOM Storage and proves a memcache inspired API for
+ setting and retrieving values.</code></pre>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>(<span class="function"><span class="keyword">function</span> <span class="params">()</span> {</span>
+
+    <span class="string">"use strict"</span>;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-3">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-3">&#182;</a>
+              </div>
+              <h2 id="initial-setup">Initial Setup</h2>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-4">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-4">&#182;</a>
+              </div>
+              <p>Save a reference to the global object, in most cases this is <code>window</code>.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    <span class="keyword">var</span> root = <span class="keyword">this</span>;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-5">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-5">&#182;</a>
+              </div>
+              <p>Object context bnding shim to support older versions of IE.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    <span class="keyword">var</span> bind = <span class="function"><span class="keyword">function</span> <span class="params">(func, thisValue)</span> {</span>
+        <span class="keyword">return</span> <span class="function"><span class="keyword">function</span> <span class="params">()</span> {</span>
+            <span class="keyword">return</span> func.apply(thisValue, arguments);
+        };
+    };</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-6">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-6">&#182;</a>
+              </div>
+              <p>Cache class constructor. This is the base &ldquo;class&rdquo; for
+locache and is used for the global instance plus any of your own
+custom caches.
+The constructor accepts a properties object, and assigns each value
+of the object to the instance. At the moment, this is only really used
+to set the &#39;storage&#39; property - so you can choose a builtin or use
+your own storage mechanism.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    <span class="function"><span class="keyword">function</span> <span class="title">LocacheCache</span><span class="params">(options)</span> {</span>
+
+        <span class="keyword">if</span> (options &amp;&amp; options.storage) {
+            <span class="keyword">this</span>.storage = options.storage;
+        }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-7">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-7">&#182;</a>
+              </div>
+              <p>Re-bind the context of the two async methods so <code>this</code> is equal to
+the instance of locache. This allows them to easily access the
+other methods and storage objects. This is a bit of hack, and may
+not be the best idea.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>        <span class="keyword">this</span>.async.set = bind(<span class="keyword">this</span>.async.set, <span class="keyword">this</span>);
+        <span class="keyword">this</span>.async.get = bind(<span class="keyword">this</span>.async.get, <span class="keyword">this</span>);
+
+    }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-8">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-8">&#182;</a>
+              </div>
+              <p>Current version of locache, this is inserted in the build process.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    LocacheCache.prototype.VERSION = <span class="string">"0.4.0"</span>;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-9">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-9">&#182;</a>
+              </div>
+              <p>Boolean value that determines if they browser supports localStorage or
+not. This is based on the Modernizr implementation that can be found
+in <a href="https://github.com/Modernizr/Modernizr/blob/c56fb8b09515f629806ca44742932902ac145302/modernizr.js#L696-731">the Modernizr GitHub repository.</a></p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    <span class="keyword">var</span> supportsLocalStorage = LocacheCache.prototype.supportsLocalStorage = (<span class="function"><span class="keyword">function</span> <span class="params">()</span> {</span>
+
+        <span class="keyword">try</span> {</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-10">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-10">&#182;</a>
+              </div>
+              <p>Create a test value and attempt to set, get and remove the
+value. These are the core functionality required by locache</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>            <span class="keyword">var</span> test_val = <span class="string">"___locache___"</span>;
+            root.localStorage.setItem(test_val, test_val);
+            root.localStorage.getItem(test_val);
+            root.localStorage.removeItem(test_val);</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-11">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-11">&#182;</a>
+              </div>
+              <p>If any of the checks fail, an exception will be raised. At
+that point we can flag the browser as not supporting
+localStorage.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>            <span class="keyword">return</span> <span class="literal">true</span>;
+        } <span class="keyword">catch</span> (e) {
+            <span class="keyword">return</span> <span class="literal">false</span>;
+        }
+
+    })();</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-12">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-12">&#182;</a>
+              </div>
+              <p>Boolean value that determines if they browser supports sessionStorage or
+not. This is based on the Modernizr implementation that can be found
+in <a href="https://github.com/Modernizr/Modernizr/blob/c56fb8b09515f629806ca44742932902ac145302/modernizr.js#L696-731">the Modernizr GitHub repository.</a></p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    <span class="keyword">var</span> supportsSessionStorage = LocacheCache.prototype.supportsSessionStorage = (<span class="function"><span class="keyword">function</span> <span class="params">()</span> {</span>
+
+        <span class="keyword">try</span> {</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-13">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-13">&#182;</a>
+              </div>
+              <p>Create a test value and attempt to set, get and remove the
+value. These are the core functionality required by locache</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>            <span class="keyword">var</span> test_val = <span class="string">"___locache___"</span>;
+            root.sessionStorage.setItem(test_val, test_val);
+            root.sessionStorage.getItem(test_val);
+            root.sessionStorage.removeItem(test_val);</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-14">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-14">&#182;</a>
+              </div>
+              <p>If any of the checks fail, an exception will be raised. At
+that point we can flag the browser as not supporting
+sessionStorage.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>            <span class="keyword">return</span> <span class="literal">true</span>;
+        } <span class="keyword">catch</span> (e) {
+            <span class="keyword">return</span> <span class="literal">false</span>;
+        }
+
+    })();</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-15">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-15">&#182;</a>
+              </div>
+              <p>Boolean flag to check if the browser supports native JSON.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    <span class="keyword">var</span> supportsNativeJSON = LocacheCache.prototype.supportsNativeJSON = !!root.JSON;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-16">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-16">&#182;</a>
+              </div>
+              <p>Booleant flat to check if the browser supports HTML postMessage.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    <span class="keyword">var</span> supportsPostMessage = LocacheCache.prototype.supportsPostMessage = !!window.postMessage;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-17">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-17">&#182;</a>
+              </div>
+              <h2 id="internal-utility-functions">Internal utility functions</h2>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-18">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-18">&#182;</a>
+              </div>
+              <p>A defer implempmentation to avoid IO access blocking the current
+thread. This is exposed on the LocacheCache prototype, simply so it
+can be accessed from within the unit tests. It&#39;s not intended for
+public use.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    <span class="keyword">var</span> defer = LocacheCache.prototype._defer = (<span class="function"><span class="keyword">function</span> <span class="params">()</span> {</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-19">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-19">&#182;</a>
+              </div>
+              <p>Store of the pending functions</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>        <span class="keyword">var</span> timeouts = [];</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-20">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-20">&#182;</a>
+              </div>
+              <p>Message name used to identify posts related to the defer</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>        <span class="keyword">var</span> messageName = <span class="string">"function-defer-message"</span>;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-21">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-21">&#182;</a>
+              </div>
+              <p>Add a message event listner. If its not from this window or doesn&#39;t
+have the message name defined above, don&#39;t do anything and allow it
+to propogate to other handlers. Otherwise, its meant for us so stop
+the event.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>        <span class="keyword">var</span> addEventListener;
+        <span class="keyword">if</span> (root.addEventListener) {
+            addEventListener = root.addEventListener;
+        } <span class="keyword">else</span> <span class="keyword">if</span> (root.attachEvent) {
+            addEventListener = root.attachEvent;
+        }
+
+        addEventListener(<span class="string">"message"</span>, <span class="function"><span class="keyword">function</span> <span class="params">(event)</span> {</span>
+
+            <span class="keyword">if</span> (event.source !== root || event.data !== messageName) {
+                <span class="keyword">return</span>;
+            }
+            event.stopPropagation();</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-22">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-22">&#182;</a>
+              </div>
+              <p>Make sure we have some pending functions, otherwise return.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>            <span class="keyword">if</span> (timeouts.length === <span class="number">0</span>) {
+                <span class="keyword">return</span>;
+            }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-23">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-23">&#182;</a>
+              </div>
+              <p>take the oldest from the &#39;queue&#39; and call that functions.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>            <span class="keyword">var</span> fn = timeouts.shift();
+            fn();</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-24">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-24">&#182;</a>
+              </div>
+              <p>Return false, to make sure the event isn&#39;t propogated</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>            <span class="keyword">return</span> <span class="literal">false</span>;
+
+        }, <span class="literal">true</span>);</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-25">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-25">&#182;</a>
+              </div>
+              <p>Constructor for the Defer, takes a function onject and stores it
+on itself.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>        <span class="function"><span class="keyword">function</span> <span class="title">Deferred</span><span class="params">(fn)</span> {</span>
+            <span class="keyword">this</span>.fn = fn;
+        }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-26">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-26">&#182;</a>
+              </div>
+              <p>The defer method runs the function and stores the result. Uppon
+finishing, it looks for a finishedFunction, that if exists, is
+called and passed the result.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>        Deferred.prototype.defer = <span class="function"><span class="keyword">function</span> <span class="params">()</span> {</span>
+            <span class="keyword">this</span>.resultValue = <span class="keyword">this</span>.fn();
+            <span class="keyword">if</span> (<span class="keyword">this</span>.hasOwnProperty(<span class="string">'finishedFunction'</span>)) {
+                <span class="keyword">this</span>.finishedFunction(<span class="keyword">this</span>.resultValue);
+            }
+        };</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-27">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-27">&#182;</a>
+              </div>
+              <p>Return if the defer has finished. THis is determined by the
+existance of the resultValue on the object.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>        Deferred.prototype.hasFinished = <span class="function"><span class="keyword">function</span> <span class="params">()</span> {</span>
+            <span class="keyword">return</span> <span class="keyword">this</span>.hasOwnProperty(<span class="string">'resultValue'</span>);
+        };</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-28">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-28">&#182;</a>
+              </div>
+              <p>The finished function takes another function and assigns that to
+be called when the deferred function has finished.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>        Deferred.prototype.finished = <span class="function"><span class="keyword">function</span> <span class="params">(fn)</span> {</span>
+            <span class="keyword">this</span>.finishedFunction = fn;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-29">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-29">&#182;</a>
+              </div>
+              <p>Check to see if the deferred function has finished, this can
+happen if its very quick or the finished function is assigned
+late. If it is, call it straight away.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>            <span class="keyword">if</span> (<span class="keyword">this</span>.hasFinished()) {
+                <span class="keyword">this</span>.finishedFunction(<span class="keyword">this</span>.resultValue);
+            }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-30">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-30">&#182;</a>
+              </div>
+              <p>Make this object chainable.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>            <span class="keyword">return</span> <span class="keyword">this</span>;
+        };</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-31">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-31">&#182;</a>
+              </div>
+              <p>Wrapper utility function that provies access to the Deffered
+implementation and makes it very simple to use.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>        <span class="function"><span class="keyword">function</span> <span class="title">defer</span><span class="params">(fn)</span> {</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-32">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-32">&#182;</a>
+              </div>
+              <p>Create the defer instance that wraps the function</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>            <span class="keyword">var</span> d = <span class="keyword">new</span> Deferred(fn);</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-33">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-33">&#182;</a>
+              </div>
+              <p>Add the defer method on the Deffered object, with the instance
+bound to the queue.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>            timeouts.push(bind(d.defer, d));</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-34">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-34">&#182;</a>
+              </div>
+              <p>post a message to the window that can be recieved by the
+message handler.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>            root.postMessage(messageName, <span class="string">"*"</span>);</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-35">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-35">&#182;</a>
+              </div>
+              <p>Finally return the deffered object instance.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>            <span class="keyword">return</span> d;
+        }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-36">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-36">&#182;</a>
+              </div>
+              <p>Only return the defer function, this is all we want to be publicly
+accessible.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>        <span class="keyword">return</span> defer;
+
+    })();</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-37">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-37">&#182;</a>
+              </div>
+              <p>Two cache prefixes. When storing values, all keys are prefixed
+to avoid collisions with other usage of the storage backend.
+If the stored value is given an expire time then a second key
+is set with a different prefix to store this time.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    LocacheCache.prototype.cachePrefix = <span class="string">'___locache___'</span>;
+    LocacheCache.prototype.expirePrefix = <span class="string">'___locacheExpire___'</span>;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-38">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-38">&#182;</a>
+              </div>
+              <p>Built in locache backends. These are simple wrappers around the actual
+storage mechanism to allow for them to be easily exchanged.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    LocacheCache.prototype.backends = {</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-39">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-39">&#182;</a>
+              </div>
+              <p>Wrapper around localStorage - persistent local storage in the
+browser.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>        local: {
+            set: <span class="function"><span class="keyword">function</span> <span class="params">(key, value)</span> {</span>
+                <span class="keyword">return</span> root.localStorage.setItem(key, value);
+            },
+
+            get: <span class="function"><span class="keyword">function</span> <span class="params">(key)</span> {</span>
+                <span class="keyword">return</span> root.localStorage.getItem(key);
+            },
+
+            remove: <span class="function"><span class="keyword">function</span> <span class="params">(key)</span> {</span>
+                <span class="keyword">return</span> root.localStorage.removeItem(key);
+            },
+
+            length: <span class="function"><span class="keyword">function</span> <span class="params">(key)</span> {</span>
+                <span class="keyword">return</span> root.localStorage.length;
+            },
+
+            key: <span class="function"><span class="keyword">function</span> <span class="params">(index)</span> {</span>
+                <span class="keyword">if</span> (index &lt; <span class="number">0</span> || index &gt;= <span class="keyword">this</span>.length()) {
+                    <span class="keyword">return</span>;
+                }
+                <span class="keyword">return</span> root.localStorage.key(index);
+            },
+            enabled: <span class="function"><span class="keyword">function</span> <span class="params">()</span> {</span>
+                <span class="keyword">return</span> supportsNativeJSON &amp;&amp; supportsLocalStorage;
+            }
+        },</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-40">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-40">&#182;</a>
+              </div>
+              <p>Wrapper around sessionStorage - storage in the browser that is
+cleared each time a new session is started - new browser window etc.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>        session: {
+            set: <span class="function"><span class="keyword">function</span> <span class="params">(key, value)</span> {</span>
+                <span class="keyword">return</span> root.sessionStorage.setItem(key, value);
+            },
+
+            get: <span class="function"><span class="keyword">function</span> <span class="params">(key)</span> {</span>
+                <span class="keyword">return</span> root.sessionStorage.getItem(key);
+            },
+
+            remove: <span class="function"><span class="keyword">function</span> <span class="params">(key)</span> {</span>
+                <span class="keyword">return</span> root.sessionStorage.removeItem(key);
+            },
+
+            length: <span class="function"><span class="keyword">function</span> <span class="params">(key)</span> {</span>
+                <span class="keyword">return</span> root.sessionStorage.length;
+            },
+
+            key: <span class="function"><span class="keyword">function</span> <span class="params">(index)</span> {</span>
+                <span class="keyword">if</span> (index &lt; <span class="number">0</span> || index &gt;= <span class="keyword">this</span>.length()) {
+                    <span class="keyword">return</span>;
+                }
+                <span class="keyword">return</span> root.sessionStorage.key(index);
+            },
+            enabled: <span class="function"><span class="keyword">function</span> <span class="params">()</span> {</span>
+                <span class="keyword">return</span> supportsNativeJSON &amp;&amp; supportsSessionStorage;
+            }
+        }
+
+    };
+
+    LocacheCache.prototype.storage = LocacheCache.prototype.backends.local;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-41">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-41">&#182;</a>
+              </div>
+              <p>Utility method to get the number of milliseconds since the Epoch. This
+is used when comparing keys to see if they have expired.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    <span class="keyword">var</span> _currentTime = <span class="function"><span class="keyword">function</span> <span class="params">()</span> {</span>
+        <span class="keyword">return</span> <span class="keyword">new</span> Date().getTime();
+    };</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-42">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-42">&#182;</a>
+              </div>
+              <p>Given a key, return the key used internally for storing values without
+the risk of collisions over usage of the storage backend.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    LocacheCache.prototype.key = <span class="function"><span class="keyword">function</span> <span class="params">(key)</span> {</span>
+        <span class="keyword">return</span> <span class="keyword">this</span>.cachePrefix + key;
+    };</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-43">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-43">&#182;</a>
+              </div>
+              <p>Given a key, return the key to be used internally for expiry time.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    LocacheCache.prototype.expirekey = <span class="function"><span class="keyword">function</span> <span class="params">(key)</span> {</span>
+        <span class="keyword">return</span> <span class="keyword">this</span>.expirePrefix + key;
+    };</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-44">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-44">&#182;</a>
+              </div>
+              <p>Given a key, look up its expire time and determine if its in the past
+or not. Returns a Boolean.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    LocacheCache.prototype.hasExpired = <span class="function"><span class="keyword">function</span> <span class="params">(key)</span> {</span>
+
+        <span class="keyword">var</span> expireKey = <span class="keyword">this</span>.expirekey(key);
+        <span class="keyword">var</span> expireValue = parseInt(<span class="keyword">this</span>.storage.get(expireKey), <span class="number">10</span>);</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-45">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-45">&#182;</a>
+              </div>
+              <p>If we have non-zero integer perform the comparison.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>        <span class="keyword">if</span> (expireValue &amp;&amp; expireValue &lt; _currentTime()) {
+            <span class="keyword">return</span> <span class="literal">true</span>;
+        }
+
+        <span class="keyword">return</span> <span class="literal">false</span>;
+
+    };</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-46">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-46">&#182;</a>
+              </div>
+              <h2 id="main-public-api-functions-">Main public API functions.</h2>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-47">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-47">&#182;</a>
+              </div>
+              <p>Given a key, a value and an optional number of seconds store the value
+in the storage backend.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    LocacheCache.prototype.set = <span class="function"><span class="keyword">function</span> <span class="params">(key, value, seconds)</span> {</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-48">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-48">&#182;</a>
+              </div>
+              <p>If the storage backend isn&#39;t supported or the key passed in is
+falsy, perform a no-op.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>        <span class="keyword">if</span> (!<span class="keyword">this</span>.storage.enabled() || !key) {
+            <span class="keyword">return</span>;
+        }
+
+        <span class="keyword">var</span> expireKey = <span class="keyword">this</span>.expirekey(key);
+        <span class="keyword">var</span> valueKey = <span class="keyword">this</span>.key(key);
+
+        <span class="keyword">if</span> (seconds) {</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-49">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-49">&#182;</a>
+              </div>
+              <p>The time stored is in milliseconds, but this function expects
+seconds, so multiply by 1000.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>            <span class="keyword">var</span> ms = seconds * <span class="number">1000</span>;
+            <span class="keyword">this</span>.storage.set(expireKey, _currentTime() + ms);
+        }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-50">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-50">&#182;</a>
+              </div>
+              <p>For the value, always convert it into a JSON object. THis means
+that we can safely store many types of objects. They still need to
+be serialisable so it still rules out some, such as functions.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>        value = JSON.stringify(value);
+        <span class="keyword">return</span> <span class="keyword">this</span>.storage.set(valueKey, value);
+
+    };</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-51">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-51">&#182;</a>
+              </div>
+              <p>Fetch a value from the cache. Either returns the value, or if it
+doesn&#39;t exist (or has expired) return null.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    LocacheCache.prototype.get = <span class="function"><span class="keyword">function</span> <span class="params">(key)</span> {</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-52">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-52">&#182;</a>
+              </div>
+              <p>If the storage backend isn&#39;t supported or the key passed in is
+falsy, perform a no-op and return null.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>        <span class="keyword">if</span> (!<span class="keyword">this</span>.storage.enabled() || !key) {
+            <span class="keyword">return</span> <span class="literal">null</span>;
+        }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-53">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-53">&#182;</a>
+              </div>
+              <p>If the value has expired, before returning null remove the key
+from the storage backend to free up the space.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>        <span class="keyword">if</span> (<span class="keyword">this</span>.hasExpired(key)) {
+            <span class="keyword">this</span>.remove(<span class="keyword">this</span>.key(key));
+            <span class="keyword">return</span> <span class="literal">null</span>;
+        }
+
+        <span class="keyword">var</span> valueKey = <span class="keyword">this</span>.key(key);
+        <span class="keyword">var</span> value = <span class="keyword">this</span>.storage.get(valueKey);</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-54">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-54">&#182;</a>
+              </div>
+              <p>After we have the value back, check its truthy and then attempt to
+parse the JSON. If the JSON parsing fails, return null. This could
+be handled better but its hard to know what to do here? We only
+set JSON and thus we expect JSON but we don&#39;t want to delete
+values that must have come from another source.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>        <span class="keyword">if</span> (value) {
+            <span class="keyword">try</span> {
+                <span class="keyword">return</span> JSON.parse(value);
+            } <span class="keyword">catch</span> (err) {
+                <span class="keyword">return</span> <span class="literal">null</span>;
+            }
+        }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-55">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-55">&#182;</a>
+              </div>
+              <p>If value isn&#39;t truthy, it must be an empty string or similar, so
+just return that.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>        <span class="keyword">return</span> value;
+
+    };</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-56">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-56">&#182;</a>
+              </div>
+              <p>The async object, provides an extra level to the namespace that
+contains all of the sync calls supports within locache</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    LocacheCache.prototype.async = {
+
+        set: <span class="function"><span class="keyword">function</span> <span class="params">(key, value, seconds)</span> {</span>
+            <span class="keyword">return</span> defer(bind(<span class="function"><span class="keyword">function</span> <span class="params">()</span> {</span>
+                <span class="keyword">return</span> <span class="keyword">this</span>.set(key, value, seconds);
+            }, <span class="keyword">this</span>));
+        },
+
+        get: <span class="function"><span class="keyword">function</span> <span class="params">(key)</span> {</span>
+            <span class="keyword">return</span> defer(bind(<span class="function"><span class="keyword">function</span> <span class="params">()</span> {</span>
+                <span class="keyword">return</span> <span class="keyword">this</span>.get(key);
+            }, <span class="keyword">this</span>));
+
+        }
+
+    };</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-57">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-57">&#182;</a>
+              </div>
+              <p>When removing a key - delete from the storage both the value key/value
+pair and the expiration time key/value pair.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    LocacheCache.prototype.remove = <span class="function"><span class="keyword">function</span> <span class="params">(key)</span> {</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-58">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-58">&#182;</a>
+              </div>
+              <p>If the storage backend isn&#39;t enabled perform a no-op.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>        <span class="keyword">if</span> (!<span class="keyword">this</span>.storage.enabled()) {
+            <span class="keyword">return</span>;
+        }
+
+        <span class="keyword">var</span> expireKey = <span class="keyword">this</span>.expirekey(key);
+        <span class="keyword">var</span> valueKey = <span class="keyword">this</span>.key(key);
+
+        <span class="keyword">this</span>.storage.remove(expireKey);
+        <span class="keyword">this</span>.storage.remove(valueKey);
+
+    };</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-59">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-59">&#182;</a>
+              </div>
+              <p>Given a key name, fetch it, increment the value and store it again. If
+the counter hasn&#39;t be initialised yet, set it to zero and then perform
+the increment. The fetched value is always parsed as an int to make
+sure the increment will work - this means if a non-int was stored, it
+will be converted first and thus reset the counter to zero.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    LocacheCache.prototype.incr = <span class="function"><span class="keyword">function</span> <span class="params">(key)</span> {</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-60">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-60">&#182;</a>
+              </div>
+              <p>If the storage backend isn&#39;t enabled perform a no-op.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>        <span class="keyword">if</span> (!<span class="keyword">this</span>.storage.enabled()) {
+            <span class="keyword">return</span>;
+        }
+
+        <span class="keyword">var</span> current = parseInt(<span class="keyword">this</span>.get(key), <span class="number">10</span>);
+        <span class="keyword">if</span> (!current) {
+            current = <span class="number">0</span>;
+        }
+        current ++;
+        <span class="keyword">this</span>.set(key, current);
+        <span class="keyword">return</span> current;
+
+    };</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-61">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-61">&#182;</a>
+              </div>
+              <p>Exactly the same as the incr function, but with a decrementing value.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    LocacheCache.prototype.decr = <span class="function"><span class="keyword">function</span> <span class="params">(key)</span> {</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-62">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-62">&#182;</a>
+              </div>
+              <p>If the storage backend isn&#39;t enabled perform a no-op.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>        <span class="keyword">if</span> (!<span class="keyword">this</span>.storage.enabled()) {
+            <span class="keyword">return</span>;
+        }
+
+        <span class="keyword">var</span> current = parseInt(<span class="keyword">this</span>.get(key), <span class="number">10</span>);
+        <span class="keyword">if</span> (!current) {
+            current = <span class="number">0</span>;
+        }
+        current --;
+        <span class="keyword">this</span>.set(key, current);
+        <span class="keyword">return</span> current;
+
+    };</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-63">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-63">&#182;</a>
+              </div>
+              <p>Given a properties object, in the form of {key: value, key:value} set
+multiple keys.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    LocacheCache.prototype.setMany = <span class="function"><span class="keyword">function</span> <span class="params">(properties, seconds)</span> {</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-64">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-64">&#182;</a>
+              </div>
+              <p>If the storage backend isn&#39;t enabled perform a no-op.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>        <span class="keyword">if</span> (!<span class="keyword">this</span>.storage.enabled()) {
+            <span class="keyword">return</span>;
+        }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-65">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-65">&#182;</a>
+              </div>
+              <p>Iterate through all the object properties.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>        <span class="keyword">for</span> (<span class="keyword">var</span> key <span class="keyword">in</span> properties) {</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-66">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-66">&#182;</a>
+              </div>
+              <p>Ignore any inherited properties, by making sure they are in
+the given objecct.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>            <span class="keyword">if</span> (properties.hasOwnProperty(key)) {
+                <span class="keyword">this</span>.set(key, properties[key], seconds);
+            }
+        }
+
+    };</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-67">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-67">&#182;</a>
+              </div>
+              <p>Given an array of keys, return an array of values. If values don&#39;t
+exist, null will be in their place.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    LocacheCache.prototype.getMany = <span class="function"><span class="keyword">function</span> <span class="params">(keys)</span> {</span>
+
+        <span class="keyword">var</span> results = {};
+
+        <span class="keyword">for</span> (<span class="keyword">var</span> i = <span class="number">0</span>; i &lt; keys.length; i++) {</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-68">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-68">&#182;</a>
+              </div>
+              <p>To ensure that the correct structure is returned, if
+the storage backend isn&#39;t enabled return an array of null
+values with the correct length.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>            <span class="keyword">if</span> (<span class="keyword">this</span>.storage.enabled()) {
+                results[keys[i]] = <span class="keyword">this</span>.get(keys[i]);
+            } <span class="keyword">else</span> {
+                results[keys[i]] = <span class="literal">null</span>;
+            }
+        }
+
+        <span class="keyword">return</span> results;
+
+    };</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-69">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-69">&#182;</a>
+              </div>
+              <p>Given an array of keys, return an array of values. If values don&#39;t
+exist, null will be in their place.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    LocacheCache.prototype.getManyValues = <span class="function"><span class="keyword">function</span> <span class="params">(keys)</span> {</span>
+
+        <span class="keyword">var</span> results = [];
+
+        <span class="keyword">for</span> (<span class="keyword">var</span> i = <span class="number">0</span>; i &lt; keys.length; i++) {</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-70">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-70">&#182;</a>
+              </div>
+              <p>To ensure that the correct structure is returned, if
+the storage backend isn&#39;t enabled return an array of null
+values with the correct length.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>            <span class="keyword">if</span> (<span class="keyword">this</span>.storage.enabled()) {
+                results.push(<span class="keyword">this</span>.get(keys[i]));
+            } <span class="keyword">else</span> {
+                results.push(<span class="literal">null</span>);
+            }
+        }
+
+        <span class="keyword">return</span> results;
+
+    };</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-71">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-71">&#182;</a>
+              </div>
+              <p>Given an array of keys, remove all of them from the cache.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    LocacheCache.prototype.removeMany = <span class="function"><span class="keyword">function</span> <span class="params">(keys)</span> {</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-72">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-72">&#182;</a>
+              </div>
+              <p>If the storage backend isn&#39;t enabled perform a no-op.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>        <span class="keyword">if</span> (!<span class="keyword">this</span>.storage.enabled()) {
+            <span class="keyword">return</span>;
+        }
+
+        <span class="keyword">for</span> (<span class="keyword">var</span> i = <span class="number">0</span>; i &lt; keys.length; i++) {
+            <span class="keyword">this</span>.remove(keys[i]);
+        }
+
+    };</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-73">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-73">&#182;</a>
+              </div>
+              <p>Delete all stored values from the cache. This method will only remove
+values added to the storage backend with the locache prefix in the key.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    LocacheCache.prototype.flush = <span class="function"><span class="keyword">function</span> <span class="params">()</span> {</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-74">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-74">&#182;</a>
+              </div>
+              <p>If the storage backend isn&#39;t enabled perform a no-op.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>        <span class="keyword">if</span> (!<span class="keyword">this</span>.storage.enabled()) {
+            <span class="keyword">return</span>;
+        }
+
+        <span class="keyword">var</span> length = <span class="keyword">this</span>.storage.length();
+        <span class="keyword">var</span> prefix = <span class="keyword">this</span>.cachePrefix;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-75">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-75">&#182;</a>
+              </div>
+              <p>Iteratate through all the keys stored in the storage backend - if
+the key tarts with the prefix cache prefix, then remove that key.
+backwards to make sure removing items does not mess up the index</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>        <span class="keyword">for</span> (<span class="keyword">var</span> i = length - <span class="number">1</span>; i &gt;= <span class="number">0</span>; i--) {
+            <span class="keyword">var</span> key = <span class="keyword">this</span>.storage.key(i);
+            <span class="keyword">if</span> (key &amp;&amp; key.indexOf(prefix) === <span class="number">0</span>) {
+                <span class="keyword">this</span>.storage.remove(key);
+            }
+        }
+
+    };</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-76">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-76">&#182;</a>
+              </div>
+              <p>Return the number of cache values stored in the storage backend. This
+only calculates the values stored by locache</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    LocacheCache.prototype.length = <span class="function"><span class="keyword">function</span> <span class="params">()</span> {</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-77">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-77">&#182;</a>
+              </div>
+              <p>If the storage backend isn&#39;t supported perform a no-op and return
+zero.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>        <span class="keyword">if</span> (!<span class="keyword">this</span>.storage.enabled()) {
+            <span class="keyword">return</span> <span class="number">0</span>;
+        }
+
+        <span class="keyword">var</span> c = <span class="number">0</span>;
+        <span class="keyword">var</span> length = <span class="keyword">this</span>.storage.length();
+        <span class="keyword">var</span> prefix = <span class="keyword">this</span>.cachePrefix;
+
+        <span class="keyword">for</span> (<span class="keyword">var</span> i = <span class="number">0</span>; i &lt; length; i++) {
+            <span class="keyword">if</span> (<span class="keyword">this</span>.storage.key(i).indexOf(prefix) === <span class="number">0</span>) {
+                c++;
+            }
+        }
+
+        <span class="keyword">return</span> c;
+
+    };</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-78">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-78">&#182;</a>
+              </div>
+              <p>Return the set of keys in the storage backend. This only returns the
+keys stored by locache. Returns an empty array if no keys are found.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    LocacheCache.prototype.keys = <span class="function"><span class="keyword">function</span> <span class="params">()</span> {</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-79">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-79">&#182;</a>
+              </div>
+              <p>If the storage backend isn&#39;t supported perform a no-op and return
+an empty array.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>        <span class="keyword">if</span> (!<span class="keyword">this</span>.storage.enabled()) {
+            <span class="keyword">return</span> [];
+        }
+
+        <span class="keyword">var</span> keys = [];
+        <span class="keyword">var</span> length = <span class="keyword">this</span>.storage.length();
+        <span class="keyword">var</span> prefix = <span class="keyword">this</span>.cachePrefix;
+
+        <span class="keyword">for</span> (<span class="keyword">var</span> i = <span class="number">0</span>; i &lt; length; i++) {
+            <span class="keyword">var</span> key = <span class="keyword">this</span>.storage.key(i);
+            <span class="keyword">if</span> (key.indexOf(prefix) === <span class="number">0</span>) {
+                <span class="keyword">var</span> actualKey = key.substring(prefix.length, key.length);
+                keys.push(actualKey);
+            }
+        }
+
+        <span class="keyword">return</span> keys;
+
+    };</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-80">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-80">&#182;</a>
+              </div>
+              <p>A cleanup utility method to remove expired keys. Iterate through all
+the keys stored in the storage backend. If they key is a locache key
+(it has the prefix) then check to see if the key has expired. If it
+has, remove the key from the cache.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    LocacheCache.prototype.cleanup = <span class="function"><span class="keyword">function</span> <span class="params">()</span> {</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-81">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-81">&#182;</a>
+              </div>
+              <p>If the storage backend isn&#39;t enabled perform a no-op.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>        <span class="keyword">if</span> (!<span class="keyword">this</span>.storage.enabled()) {
+            <span class="keyword">return</span>;
+        }
+
+        <span class="keyword">var</span> length = <span class="keyword">this</span>.storage.length();
+        <span class="keyword">var</span> prefix = <span class="keyword">this</span>.cachePrefix;
+
+        <span class="keyword">for</span> (<span class="keyword">var</span> i = <span class="number">0</span>; i &lt; length; i++) {
+            <span class="keyword">var</span> key = <span class="keyword">this</span>.storage.key(i);</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-82">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-82">&#182;</a>
+              </div>
+              <p>If the key matches, remove the prefix to get the original key
+and then make use of the normal remove method that will clean
+up the cache value key pair and the cache epiration time key
+pair.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>            <span class="keyword">if</span> (key &amp;&amp; key.indexOf(prefix) === <span class="number">0</span>) {
+                <span class="keyword">var</span> actualKey = key.substring(prefix.length, key.length);
+                <span class="keyword">if</span> (<span class="keyword">this</span>.hasExpired(actualKey)) {
+                    <span class="keyword">this</span>.remove(actualKey);
+                }
+            }
+        }
+
+    };</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-83">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-83">&#182;</a>
+              </div>
+              <p>A factory method added to the LocacheCache constructor to create
+instances of itself. Rather than placing the class publicly, wrap
+it up in a method and keep it for internal usage.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    LocacheCache.prototype.createCache = <span class="function"><span class="keyword">function</span> <span class="params">(options)</span> {</span>
+        <span class="keyword">return</span> <span class="keyword">new</span> LocacheCache(options);
+    };</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-84">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-84">&#182;</a>
+              </div>
+              <p>The top-level instance. All public locache objects will be
+attached to this object.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    <span class="keyword">var</span> locache = <span class="keyword">new</span> LocacheCache();</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-85">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-85">&#182;</a>
+              </div>
+              <p>To provide easy access to session caching, attack another instance of
+locache to the main object. This means we can now use the full API
+against sessionStorage simply by doing: <code>locache.session.set(...)</code> and
+<code>locache.session.get(...)</code></p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    locache.session = <span class="keyword">new</span> LocacheCache({
+        storage: locache.backends.session
+    });</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-86">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-86">&#182;</a>
+              </div>
+              <p>Attach the locache namespace to the global window object.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    root.locache = locache;
+
+}).call(<span class="keyword">this</span>);</pre></div></div>
+            
+        </li>
+        
+    </ul>
+  </div>
+</body>
+</html>
